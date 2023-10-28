@@ -1,0 +1,12 @@
+[package]
+name = "AdventOfCode"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [
+    "./AdventOfCode_2020/day1",
+    "./AdventOfCode_2021",
+    "./AdventOfCode_2022",
+]
