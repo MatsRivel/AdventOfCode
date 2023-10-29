@@ -4,11 +4,6 @@ use crate::p1::main_1;
 use crate::p2::main_2;
 use std::time::Instant;
 fn main() {
-    for i in 1..=2{
-        for j in 1..=25{
-            println!("\"./AdventOfCode_202{i}/day{j}\",")
-        }
-    }
   // Part1 Puzzle:
   let file_name= r"src\puzzle.txt";
   let start = Instant::now();
