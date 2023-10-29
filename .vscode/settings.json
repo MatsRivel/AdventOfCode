@@ -1,0 +1,19 @@
+{
+    "rust-analyzer.linkedProjects": [
+        ".\\Tools\\Cargo.toml",
+        ".\\src\\Tools\\Cargo.toml",
+        ".\\src\\tools\\Cargo.toml",
+        ".\\tools\\Cargo.toml",
+        ".\\Tools\\Cargo.toml",
+        ".\\tools\\Cargo.toml",
+        ".\\Tools\\Cargo.toml",
+        ".\\src\\tools\\Cargo.toml",
+        ".\\Cargo.toml",
+        ".\\tools\\Cargo.toml",
+        ".\\tools\\Cargo.toml",
+        ".\\tools\\Cargo.toml",
+        ".\\tools\\Cargo.toml",
+        ".\\tools\\Cargo.toml",
+        ".\\tools\\Cargo.toml"
+    ]
+}

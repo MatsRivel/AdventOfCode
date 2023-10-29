@@ -1,0 +1,43 @@
+struct MapCycle{
+        height: i32,
+        current_idx:i32,
+        max_idx:i32,
+        cycle: impl Iterator<Item=Tile>,
+
+    }
+
+    impl MapCycle {
+        fn new(line:&str){
+            let cycle = line.chars().map(|c| {
+                match c{
+                    '#' => Wall,
+                    '.' => Floor,
+                    _ => panic!("--- Invalid char! ({c}) ---")
+                }
+            }).cycle();
+            let max_idx = cycle.len();
+        }
+    }
+    
+    enum Tile{
+        Wall,
+        Floor
+    }
+    fn make_cyclic_map_line(line:&str)-> impl Iterator<Item = Tile>{
+
+    }
+    fn process_data_string(s:&str){
+        let temp = s.lines()
+            .map(|line| {
+                match line.contains(".") || line.contains("#"){
+                    true => todo!(),
+                    false => todo!()
+                }
+            });
+        todo!()
+    }
+    pub fn main_1(file_name:&str)->Option<i32>{
+        let data_string = read_to_string(file_name).expect("We know file exists");
+
+      None
+    }
