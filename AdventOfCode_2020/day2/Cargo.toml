@@ -6,4 +6,4 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tools = { path = "C:/Users/Mats/OneDrive/AdventOfCode/AdventOfCode/tools" }
+tools = { path = "C:/Users/rivelandm/OneDrive - NOV Inc/Documents/ML and more/AOC/AdventOfCode/tools" }

@@ -38,16 +38,29 @@ mod tests{
         }
 
 	#[test]
-	fn part2_dummy(){
-        let file_name = r"src\dummy.txt";
+	fn part2_valid_dummy(){
+        let file_name = r"src\valid.txt";
         let start = Instant::now();
         let count = main_2(file_name);
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = todo!();
+            let expected_value = 4;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
-    }
+        }
+
 	}
+	#[test]
+	fn part2_invalid_dummy(){
+        let file_name = r"src\invalid.txt";
+        let start = Instant::now();
+        let count = main_2(file_name);
+        let end = start.elapsed();
+        println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            let expected_value = 0;
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
+        }
+    }
 	
 }
