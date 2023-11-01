@@ -14,6 +14,7 @@ members = [
 "./AdventOfCode_2020/day6",
 "./AdventOfCode_2020/day7",
 "./AdventOfCode_2020/day8",
+"./AdventOfCode_2020/day9",
 
 
 # "./AdventOfCode_2021/day1",
