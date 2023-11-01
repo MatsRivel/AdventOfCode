@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 use core::panic;
 use std::{fs::read_to_string, collections::HashSet};
 #[derive(PartialEq,Debug,Copy,Clone)]
@@ -141,12 +140,6 @@ pub fn main_2(file_name:&str)->Option<i32>{
         idx += 1;
         continue;
     }
-=======
-use std::fs::read_to_string;
-pub fn main_2(file_name:&str)->Option<i32>{
-    None
-
->>>>>>> f256c707b9daffae1f24c3024df3644f168ef68f
 }
 
 #[cfg(test)]

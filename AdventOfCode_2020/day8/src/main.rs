@@ -32,11 +32,7 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-<<<<<<< HEAD
             let expected_value = 5;
-=======
-            let expected_value = todo!();
->>>>>>> f256c707b9daffae1f24c3024df3644f168ef68f
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}\n__________________________");
         }
 
@@ -50,11 +46,7 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-<<<<<<< HEAD
             let expected_value = 8;
-=======
-            let expected_value = todo!();
->>>>>>> f256c707b9daffae1f24c3024df3644f168ef68f
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
     }
 	}

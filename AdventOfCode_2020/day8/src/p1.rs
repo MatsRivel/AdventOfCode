@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 use std::{fs::read_to_string, collections::HashSet, thread::current};
 #[derive(PartialEq,Debug,Copy,Clone)]
 enum Operation{
@@ -79,12 +78,6 @@ pub fn main_1(file_name:&str)->Option<i32>{
         idx += 1;
         continue;
     }
-=======
-use std::fs::read_to_string;
-pub fn main_1(file_name:&str)->Option<i32>{
-    None
-
->>>>>>> f256c707b9daffae1f24c3024df3644f168ef68f
 }
 
 #[cfg(test)]
