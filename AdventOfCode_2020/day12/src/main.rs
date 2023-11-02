@@ -3,8 +3,6 @@ mod p2;
 use crate::p1::main_1;
 use crate::p2::main_2;
 use std::time::Instant;
-
-
 fn main() {
 
   // Part1 Puzzle:
@@ -34,7 +32,7 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = 37;
+            let expected_value = 25;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}\n__________________________");
         }
 
@@ -48,7 +46,7 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = 26;
+            let expected_value = todo!();
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
     }
 	}
