@@ -14,6 +14,8 @@
         ".\\tools\\Cargo.toml",
         ".\\tools\\Cargo.toml",
         ".\\tools\\Cargo.toml",
-        ".\\tools\\Cargo.toml"
+        ".\\tools\\Cargo.toml",
+        ".\\AdventOfCode_2020\\day13\\Cargo.toml",
+        ".\\AdventOfCode_2021\\day5\\Cargo.toml"
     ]
 }
