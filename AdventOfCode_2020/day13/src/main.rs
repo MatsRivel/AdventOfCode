@@ -11,7 +11,7 @@ fn main() {
     let count = main_1(file_name);
     let end = start.elapsed();
     println!("\nPart 1 Puzzle: {count:?}\nRuntime: {end:?}");
-    assert!(count.unwrap() < 23060536,"Too high! \"{} >= count\"",count.unwrap());
+    assert!(count.unwrap() < 23060536,"Too high! \"{} >= 23060536\"",count.unwrap());
     
     // Part2 Puzzle:
     let file_name= r"src\puzzle.txt";
@@ -19,6 +19,7 @@ fn main() {
     let count = main_2(file_name);
     let end = start.elapsed();
     println!("\nPart 2 Puzzle: {count:?}\nRuntime: {end:?}");
+    assert!(count.unwrap() < 2384517360007913,"Too high! \"{} >= 2384517360007913\"",count.unwrap());
 
 }
 #[cfg(test)]
