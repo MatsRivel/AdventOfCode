@@ -33,7 +33,7 @@ impl Bits{
     pub fn new_blank_mask()->Self{
         Self { bits: [Some(false);36] }
     }
-    fn apply_mask(&mut self, mask:&Bits){
+    pub fn apply_mask(&mut self, mask:&Bits){
         self.bits.iter_mut().zip(mask.bits.iter()).for_each(|(a,b)|{
             if let Some(a_bit) = a{
                 if let Some(b_bit) = b{
@@ -92,7 +92,7 @@ pub fn main_1(file_name:&str)->Option<u64>{
     mod tests{
     use super::*;
 
-    #[test]
+    // #[test]
     fn my_test(){
 
     }

@@ -11,6 +11,7 @@ fn main() {
   let count = main_1(file_name);
   let end = start.elapsed();
   println!("\nPart 1 Puzzle: {count:?}\nRuntime: {end:?}");
+  assert!(count.unwrap() == 15919415426101); // This is the solution to my problem. If it changes, I've messed something up big-time...
 
   // Part2 Puzzle:
   let file_name= r"src\puzzle.txt";
@@ -18,6 +19,7 @@ fn main() {
   let count = main_2(file_name);
   let end = start.elapsed();
   println!("\nPart 2 Puzzle: {count:?}\nRuntime: {end:?}");
+  assert!(count.unwrap() < 2661734989078016,"Too high! {} >= 2661734989078016",count.unwrap())
 
 }
 #[cfg(test)]
@@ -40,7 +42,7 @@ mod tests{
 
 	#[test]
 	fn part2_dummy(){
-        let file_name = r"src\dummy.txt";
+        let file_name = r"src\dummy_2.txt";
         let start = Instant::now();
         let count = main_2(file_name);
         let end = start.elapsed();
