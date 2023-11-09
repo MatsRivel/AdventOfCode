@@ -40,13 +40,13 @@ mod tests{
 
 	#[test]
 	fn part2_dummy(){
-        let file_name = r"src\dummy.txt";
+        let file_name = r"src\dummy2.txt";
         let start = Instant::now();
         let count = main_2(file_name);
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = todo!();
+            let expected_value = 11*12*13;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
     }
 	}
