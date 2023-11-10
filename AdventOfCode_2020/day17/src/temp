@@ -1,0 +1,153 @@
+use std::{fs::read_to_string, collections::{HashSet, HashMap}};
+
+struct NDimConway<const N_DIMS:usize>{
+    grid: HashSet<[i32;N_DIMS]> 
+}
+impl<const N_DIMS:usize> NDimConway<N_DIMS>{
+    fn new_from_string(data_string:&str) -> Self{
+        let mut grid = data_string.lines().enumerate().flat_map(|(i,line)|{
+            line.char_indices().filter_map(move |(j,c)|{
+                match c{
+                    '#' => {
+                        let mut base = [0;N_DIMS];
+                        base[0] = i as i32;
+                        base[1] = j as i32;
+                        Some(base)
+                    }, // Input only occurs in a single z-layer.
+                    _ => None
+                }
+            })
+        }).collect::<HashSet<[i32;N_DIMS]>>();
+        Self{grid}
+    }
+    fn recursive_neighbour_iteration(pos:&[i32;N_DIMS], idx:usize)->Vec<[i32;N_DIMS]>{
+        if idx == N_DIMS{
+            return vec![*pos];
+        }
+        let collected_positions = ([-1,0,1].iter()).flat_map(|i|{
+            let mut new_pos = pos.clone();
+            new_pos[idx] += i;
+            let neighbours = NDimConway::recursive_neighbour_iteration(&new_pos, idx+1);
+            neighbours
+        }).collect::<Vec<[i32;N_DIMS]>>();
+        collected_positions
+    }
+    
+    fn get_neighbours_incl_self(pos:&[i32;N_DIMS])->Vec<[i32;N_DIMS]>{
+        let mut all_neighbours = NDimConway::recursive_neighbour_iteration(pos, 0);
+
+        all_neighbours.sort();
+        let processed_neighbours = all_neighbours.windows(2)
+        .filter_map(|pair|{
+            let [previous,current] = [pair[0],pair[1]];
+            if previous == current{
+                None
+            }else{
+                Some(current)
+            }
+        }).collect::<Vec<[i32;N_DIMS]>>();
+        // #[cfg(test)]{
+        //     println!("{pos:?}");
+        //     println!("{processed_neighbours:?}");
+        //     println!();
+        // }
+        processed_neighbours
+    }
+
+    fn get_neighbours_excl_self(pos:&[i32;N_DIMS])->Vec<[i32;N_DIMS]>{
+        let mut output = NDimConway::get_neighbours_incl_self(pos);
+        if let Some(index_to_remove) = output.iter().position(|inner_pos| inner_pos == pos){
+            output.remove(index_to_remove);
+        }
+        output
+    }
+    fn conway_step(&mut self){
+        let grid = &self.grid;
+        let mut initial_neighbour_count = HashMap::new();
+        // We store neighbour count early the first time around to prevent doing the same thing twice.
+        let mut all_unsorted_neighbours = grid.iter()
+            .flat_map(|pos|{
+                let current_neighbours = NDimConway::get_neighbours_incl_self(pos);
+                let active_neighbours_count = current_neighbours
+                    .iter()
+                    .filter_map(|pos|{
+                        grid.get(pos)
+                    }).fold(0, |acc,_| acc+1);
+                initial_neighbour_count.insert(*pos,active_neighbours_count-1); // -1 to account for self.
+                current_neighbours
+            }).collect::<Vec<[i32;N_DIMS]>>();
+        // Find all unique original AND neighbouring positions. These are all candidates to change.
+        all_unsorted_neighbours.sort();
+        // Clear out duplicates.
+        let all_neighbours = all_unsorted_neighbours
+            .windows(2)
+            .filter_map(|pair|{
+                let [previous,current] = [pair[0],pair[1]];
+                if previous == current{
+                    None
+                }else{
+                    Some(current)
+                }
+            }).collect::<Vec<[i32;N_DIMS]>>();
+        // Note that we've already checked the currently active positions, so if there is an entry in the neighbours_count already, we get that one.
+    let new_grid = all_neighbours
+    .iter()
+    .filter_map(|pos|{
+        match initial_neighbour_count.get(pos){
+            Some(count) => { // This means that the position in currently active.
+                #[cfg(test)]{
+                    println!("{pos:?}: {count}");
+                }
+                if count == &2usize || count == &3usize{
+                    Some(*pos)
+                }else{
+                    None
+                }
+            },
+            None => { // This means that the position in currently active.
+                let count = NDimConway::get_neighbours_excl_self(pos)
+                    .iter()
+                    .filter_map(|pos|{
+                        grid.get(pos)
+                    }).fold(0, |acc,_| acc+1);
+                #[cfg(test)]{
+                    println!("{pos:?}: {count}");
+                }
+                if count == 3{
+                    Some(*pos)
+                }else{
+                    None
+                }
+            }
+        }
+    }).collect::<HashSet<[i32;N_DIMS]>>();
+
+    self.grid = new_grid;
+    }
+}
+
+pub fn main_1(file_name:&str)->Option<i32>{
+    let data_string = read_to_string(file_name).unwrap();
+    let mut conway_grid: NDimConway<3> = NDimConway::new_from_string(&data_string);
+
+    let n_cycles = 6;
+    for _ in 0..n_cycles{
+        conway_grid.conway_step();
+        break;
+    }
+    let total_active = conway_grid.grid.len() as i32;
+    Some(total_active)
+
+}
+
+#[cfg(test)]
+    mod tests{
+
+    use super::*;
+
+    // #[test]
+    fn my_test(){
+        
+    }
+
+}
