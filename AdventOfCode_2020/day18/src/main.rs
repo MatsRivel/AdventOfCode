@@ -18,41 +18,149 @@ fn main() {
   let count = main_2(file_name);
   let end = start.elapsed();
   println!("\nPart 2 Puzzle: {count:?}\nRuntime: {end:?}");
+  assert!(count.unwrap() < 62582114816962,">>> Too high! <<<")
 
 }
 #[cfg(test)]
 mod tests{
     use super::*;
-	
+
+	#[test]
+	fn part1_dummy1(){
+        let file_name = r"src\dummy1.txt";
+        let expected_value = 26;
+        let start = Instant::now();
+        let count = main_1(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy1: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
+    }
 	#[test]
 	fn part1_dummy(){
-        let file_names = [r"src\dummy.txt",r"src\dummy1.txt",r"src\dummy2.txt",r"src\dummy3.txt",r"src\dummy4.txt"];
-        let solutions = [71,26,437,12240,13632];
-        for (file_name,expected_value) in file_names.iter().zip(solutions.iter()){
-            let file_name = r"src\dummy4.txt";
-            let start = Instant::now();
-            let count = main_1(file_name);
-            let end = start.elapsed();
-            println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
-            if let Some(actual_value) = count{
-                assert_eq!(actual_value, *expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
-            }
+        let file_name = r"src\dummy.txt";
+        let expected_value = 71;
+        let start = Instant::now();
+        let count = main_1(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
         }
-
+        
     }
 
+	#[test]
+	fn part1_dummy2(){
+        let file_name = r"src\dummy2.txt";
+        let expected_value = 437;
+        let start = Instant::now();
+        let count = main_1(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy2: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
+    }
 
 	#[test]
-	fn part2_dummy(){
-        let file_name = r"src\dummy.txt";
+	fn part1_dummy3(){
+        let file_name = r"src\dummy3.txt";
+        let expected_value = 12240;
+        let start = Instant::now();
+        let count = main_1(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy3: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
+    }
+
+	#[test]
+	fn part1_dummy4(){
+        let file_name = r"src\dummy4.txt";
+        let expected_value = 13632;
+        let start = Instant::now();
+        let count = main_1(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy4: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
+    }
+    
+	#[test]
+	fn part2_dummy1(){
+        let file_name = r"src\dummy1.txt";
+        let expected_value = 46;
         let start = Instant::now();
         let count = main_2(file_name);
         let end = start.elapsed();
-        println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
+        println!("\nPart 1 Dummy1: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = todo!();
-            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
     }
-	}
+	#[test]
+	fn part2_dummy(){
+        let file_name = r"src\dummy.txt";
+        let expected_value = 231;
+        let start = Instant::now();
+        let count = main_2(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
+    }
+
+	#[test]
+	fn part2_dummy2(){
+        let file_name = r"src\dummy2.txt";
+        let expected_value = 1445;
+        let start = Instant::now();
+        let count = main_2(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy2: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
+    }
+
+	#[test]
+	fn part2_dummy3(){
+        let file_name = r"src\dummy3.txt";
+        let expected_value = 669060;
+        let start = Instant::now();
+        let count = main_2(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy3: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
+    }
+
+	#[test]
+	fn part2_dummy4(){
+        let file_name = r"src\dummy4.txt";
+        let expected_value = 23340;
+        let start = Instant::now();
+        let count = main_2(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy4: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value} for {file_name}.\n__________________________");
+        }
+        
+    }
 	
 }
