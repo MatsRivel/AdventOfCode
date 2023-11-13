@@ -1,174 +1,97 @@
-use std::{fs::read_to_string, vec, collections::VecDeque, fmt::{Debug, Display, write}};
-#[derive(Clone, Copy, Debug)]
-enum Opr{
-    Mult,
-    Add,
-    LParen,
-    RParen,
-    Val(u128)
-}
-impl Opr{
-    fn to_cal(&mut self) -> Cal{
-        Cal{val:*self, contents: vec![]}
-    }
-}
-impl Display for Opr{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let text = match self{
-            Opr::Mult => "*".to_string(),
-            Opr::Add => "+".to_string(),
-            Opr::LParen => "(".to_string(),
-            Opr::RParen => ")".to_string(),
-            Opr::Val(v) => v.to_string(),
-        };
-        write!(f,"{text}")
-    }
-}
-#[derive(Clone,Debug)]
-struct Cal{
-    val: Opr,
-    contents: Vec<Cal>
-}
-impl Cal{
-    fn merge_contents(&mut self)->Opr{
-        if self.contents.len() == 0{
-            return self.val;
+use std::{fs::read_to_string, collections::VecDeque};
+use crate::p1::{Nest,Node, ToNode, Stack, get_nodes};
+
+impl Nest{
+    // This is the only change needed, as the logic is the same for everything else :)
+    fn merge_content_p2(self)->Node{
+        if let Some(v) = self.val{
+            return v;
+        } else if self.content.len() == 1{
+            return self.content[0].clone().merge_content_p2();
         }
-        println!();
-        let mut cal_iter = self.contents.iter_mut();
-        let mut left_opr;
-        if let Opr::Val(v) = self.val{
-            left_opr = Opr::Val(v)
-        }else{
-            // print!("{} ",self.val);
-            left_opr = cal_iter.next().unwrap().merge_contents();
-        }
-        // print!("{left_opr} ");
-        let mut middle_opr = cal_iter.next().unwrap().merge_contents();
-        // print!("{middle_opr} ");
+        let binding = self.content.clone();
+        let mut content = binding.iter();
+
         let mut current_value = {
-            loop{
-                let val = match left_opr{
-                    Opr::Val(v) => {
-                        v},
-                    _ => {
-                        left_opr = middle_opr;
-                        middle_opr = cal_iter.next().unwrap().merge_contents();
-                        // println!("{middle_opr} ");
-                        continue;
-                    },
-                };
-                break val;
-            }
+            content
+                .next()
+                .expect("Should never have less than 3 elements in a Nest")
+                .clone()
+                .merge_content_p2()
+                .get_val()
         };
-        // TODO: NOTE TO SELF: The issue is that currently + is prioritized over ) if all that is left to do to the left of it is * ? Maybe?
-        let mut val_stack: VecDeque<u128> = VecDeque::new();
-        while let Some(right_cal) = cal_iter.next() {
-            // print!("{right_cal} ");
-            if let Opr::Val(right_value) = right_cal.merge_contents(){
-                match middle_opr{
-                    Opr::Mult => {
-                        val_stack.push_back(current_value);
-                        current_value = right_value;                        
-                        
-                    },
-                    Opr::Add => {
-                        print!("{current_value} + {right_value} = ");
-                        current_value += right_value;
-                        println!("{current_value}")
-                    },
-                    _ => ()
-                }
-                
+
+        let mut operation = {
+            content
+                .next()
+                .expect("Should never have less than 3 elements in a Nest")
+                .clone()
+                .merge_content_p2()
+        };
+
+        let mut queue = VecDeque::new();
+        while let Some(new_raw) = content.next(){
+            let new_value =new_raw.clone().merge_content_p2().get_val();
+            match operation{
+                Node::Mult => {
+                    queue.push_back(current_value);
+                    current_value = new_value;
+                },
+                Node::Add => {
+                    #[cfg(test)]
+                    println!("{current_value} {operation} {new_value} = {}",current_value + new_value);
+                    current_value += new_value;
+                },
+                Node::LParen | Node::RParen | Node::Val(_) => panic!("Should never happen!"),
             }
-            middle_opr = right_cal.val;
+            if let Some(new_opr) = content.next(){
+                operation = new_opr.clone().merge_content_p2();
+            }else{
+                break;
+            }            
         }
-        println!();
-        let sum = val_stack.iter().fold(current_value, |acc,v| {println!("{acc} * {v} = {}",acc*v); acc*v});
-        Opr::Val(sum)
-
+        // Now perform multiplication:
+        let product = queue
+            .iter()
+            .fold(current_value, |acc,v| {
+                #[cfg(test)]
+                println!("{acc} * {v} = {}",acc*v);
+                acc*v
+            });
+        product.to_node().expect("u128.to_node() is infallable")
     }
 }
-impl Display for Cal{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}",self.val).unwrap();
-        for content in &self.contents{
-            write!(f," {content}").unwrap();
-        }
-        Ok(())
-    }
-}
-fn extract_sub_groups(data_string:&str)-> Cal{
-    let mut all_oprs = {
-        data_string
-            .lines()
-            .flat_map(|line| {
-                line.chars().filter_map(|c| {
-                    match c{
-                        '*' => Some(Opr::Mult),
-                        '+' => Some(Opr::Add),
-                        '('=> Some(Opr::LParen),
-                        ')' => Some(Opr::RParen),
-                        v => match v.is_numeric(){
-                            true => Some(Opr::Val(v.to_digit(10).unwrap() as u128)),
-                            false => None
-                        }
-                    }
-                })
-            })
-    };
-    #[cfg(none)]{
-        let clone_opr = all_oprs.clone().collect::<Vec<Opr>>();
-        for opr in clone_opr{
-            print!("{opr} ");
-        }
-        println!("\n_____________________________")
-    }
 
-    let mut stack = VecDeque::<Cal>::new();
-    let mut current_cal = Cal{val:all_oprs.next().unwrap(), contents: vec![]};
-    for mut opr in all_oprs{
-        match opr{
-            Opr::Mult | Opr::Add | Opr::Val(_)=> current_cal.contents.push(opr.to_cal()),
-            Opr::LParen => {
-                stack.push_back(current_cal.clone());
-                current_cal = opr.to_cal();
-            },
-            Opr::RParen => {
-                current_cal.contents.push(opr.to_cal());
-                if let Some(mut old_cal) = stack.pop_back(){
-                    old_cal.contents.push(current_cal.clone());
-                    current_cal = old_cal;
-                }
-
-            }
-        }
-    }
-    #[cfg(none)]
-    println!("{current_cal}");
-    current_cal
-}
 pub fn main_2(file_name:&str)->Option<u128>{
     let data_string = read_to_string(file_name).unwrap();
-    let mut vals = vec![];
+    let mut sum = 0;
     for line in data_string.lines(){
-        let mut sub_group = extract_sub_groups(line);
-        if let Opr::Val(val) = sub_group.merge_contents(){
-            vals.push(val);
+        let raw_nodes = get_nodes(line);
+        let mut nest_stack = Stack::new();
+        let mut current_nest = Nest::new();
+        // First we divide each section such that it obeys the parenthesies.
+        for node in raw_nodes.iter(){
+            match node{
+                Node::Mult | Node::Add | Node::Val(_) => { // We only add a nest here which has no children.
+                    current_nest.push(node.to_nest())
+                },
+                Node::LParen => {
+                    nest_stack.push(current_nest.clone());
+                    current_nest = Nest::new();
+                },
+                Node::RParen => {
+                    let mut old_nest = nest_stack.pop().expect("Should never have a ')' without a '(' first!");
+                    old_nest.push(current_nest);
+                    current_nest = old_nest;
+                }
+            }
         }
+        sum += current_nest.merge_content_p2().get_val();
     }
-    let output = vals.iter().fold(0, |acc,v| acc+v);
-    Some(output)
+    Some(sum)
 
 }
 
 #[cfg(test)]
     mod tests{
-    use super::*;
-
-    #[test]
-    fn my_test(){
-
-    }
-
 }
