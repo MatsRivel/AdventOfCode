@@ -1,7 +1,116 @@
-use std::{fs::read_to_string, collections::HashMap, fmt::{Display, write}};
-use anyhow::{anyhow,Error, Context};
+use std::{fs::read_to_string, fmt::Display, collections::HashMap, ops::Index};
+use anyhow::{Error,Context,anyhow};
 
-pub fn get_rule(row:&str)->Result<(u32,Vec<Vec<String>>),anyhow::Error>{
+// Structures
+#[derive(PartialEq,Copy,Clone,Debug)]
+pub enum CoreRule{
+    A,
+    B
+}
+pub struct CoreRuleVec{
+    content: Vec<CoreRule>
+}
+pub struct AltRules{
+    alt_rules: Vec<CoreRuleVec>
+}
+#[derive(Clone,Debug)]
+pub struct Logic{
+    set: Vec<u32>,
+}
+pub struct LogicIterator{
+    idx:usize,
+    set: Vec<u32>
+}
+impl Iterator for LogicIterator{
+    type Item=u32;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx < self.set.len(){
+            let output = Some(self.set[self.idx]);
+            self.idx += 1;
+            output
+        }else{
+            None
+        }
+    }
+}
+
+#[derive(Clone,Debug)]
+pub enum Rule{
+    CoreRule( CoreRule ),
+    RuleLogic( Logic )
+}
+
+// Custom Traits:
+trait IntoCoreRule<Char>{
+    fn to_core_rule(&self) -> Option<CoreRule>;
+}
+impl IntoCoreRule<char> for char{
+    fn to_core_rule(&self) -> Option<CoreRule> {
+        match self{
+            'a' => Some(CoreRule::A),
+            'b' => Some(CoreRule::B),
+            _ => None
+
+        }
+    }
+}
+trait IntoRule<Char>{
+    fn to_rule(&self) -> Option<Rule>;
+}
+impl IntoRule<char> for char{
+    fn to_rule(&self) -> Option<Rule> {
+        match self{
+            'a' => Some(Rule::CoreRule ('a'.to_core_rule().unwrap() )),
+            'b' => Some(Rule::CoreRule( 'b'.to_core_rule().unwrap())),
+            _ => None
+
+        }
+    }
+}
+impl Index<usize> for CoreRuleVec {
+    type Output = CoreRule;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.content[index]
+    }
+}
+impl Index<usize> for Logic {
+    type Output = u32;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.set[index]
+    }
+}
+// Displays
+impl Display for CoreRule{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self{
+            CoreRule::A => write!(f,"a"),
+            CoreRule::B => write!(f,"b")
+        }
+    }
+}
+impl Display for Rule{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,"{self}")
+    }
+}
+impl Display for Logic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // let string = self.set.iter().map(|r| format!("{r}")).collect::<String>();
+        write!(f,"")
+
+    }
+}
+impl Display for CoreRuleVec{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // let string = self.content.iter().map(|core| format!("{core}") ).collect::<String>();
+        write!(f,"")
+    }
+}
+
+// Functions
+fn get_rule(row:&str)->Result<(u32,Vec<Rule>),anyhow::Error>{
     let split =  row.split(": ").map(|s| s ).collect::<Vec<&str>>();
     if split.len() < 2{
         return Err(anyhow!("Skipping empty string."));
@@ -10,14 +119,23 @@ pub fn get_rule(row:&str)->Result<(u32,Vec<Vec<String>>),anyhow::Error>{
     let either_rules = content.split(" | ").map(|local_all_rules| local_all_rules).collect::<Vec<&str>>();
     let all_rules = either_rules
         .iter()
-        .map(|rule_group|{
-            rule_group.split(" ").map(|inner_rule| inner_rule.to_string()).collect::<Vec<String>>()
-        }).collect::<Vec<Vec<String>>>();
+        .filter_map(|rule_group|{
+            let rules = rule_group.split(" ").collect::<Vec<&str>>();
+            if rules.len() == 1{
+                match rules[0]{
+                    "\"a\"" => 'a'.to_rule(),
+                    "\"b\"" => 'b'.to_rule(),
+                    _ => None
+                }
+            }else{
+                let nums = rules.iter().filter_map(|s| s.parse::<u32>().ok()).collect::<Vec<u32>>();
+                Some( Rule::RuleLogic (Logic{set: nums} ))
+            }
+        }).collect::<Vec<Rule>>();
     let name_key = name.parse::<u32>().with_context(|| anyhow!("Failed to convert {name} to u32"))?;
     Ok((name_key, all_rules))
-
 }
-pub fn get_rules(data_string:&str)-> (HashMap<u32,Vec<Vec<String>>>, Vec<String>){
+pub fn get_rules(data_string:&str)-> (HashMap<u32,Vec<Rule>>, Vec<CoreRuleVec>){
     // "rules" hold <rule_name,Vec<Vec<Rule_set_1>,Rule_set_2>>
     let rules = data_string
         .lines()
@@ -30,134 +148,73 @@ pub fn get_rules(data_string:&str)-> (HashMap<u32,Vec<Vec<String>>>, Vec<String>
             }else{
                 None
             }
-        }).collect::<HashMap<u32,Vec<Vec<String>>>>();
+        }).collect::<HashMap<u32,Vec<Rule>>>();
 
     let inputs = data_string
         .lines()
         .filter_map(|line| {
             if line.starts_with("a") || line.starts_with("b"){
-                Some(line.to_string())
+                let content = line.chars().filter_map(|c| c.to_core_rule()).collect::<Vec<CoreRule>>();
+                Some(CoreRuleVec{content})
             }else{
                 None
             }
-        }).collect::<Vec<String>>();
+        }).collect::<Vec<CoreRuleVec>>();
+
     (rules,inputs)
 }
 
-#[derive(PartialEq,Copy,Clone,Debug)]
-enum CoreRule{
-    a,
-    b
-}
-impl Display for CoreRule{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self{
-            CoreRule::a => write!(f,"a"),
-            CoreRule::b => write!(f,"b")
-        }
-        
-    }
-}
-impl Display for Rule{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,"{self}")
-    }
-}
-impl Display for Logic {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for r in self.set_a.iter(){
-            write!(f,"{r}")?;
-        }
-        for r in self.set_b.iter(){
-            write!(f,"{r}")?;
-        }
-        write!(f,"")
-    }
-}
-trait IntoCoreRule<Char>{
-    fn to_core_rule(&self) -> Option<CoreRule>;
-}
-impl IntoCoreRule<char> for char{
-    fn to_core_rule(&self) -> Option<CoreRule> {
-        match self{
-            'a' => Some(CoreRule::a),
-            'b' => Some(CoreRule::b),
-            _ => None
-
+fn traverse_rules(rules:&HashMap<u32,Vec<Rule>>, problem:&CoreRuleVec, key:&u32, depth:usize)->Option<Vec<CoreRule>>{
+    let rule_set = rules.get(&key).expect("Infallable, as we traverse known keys.");
+    for rule in rule_set.iter(){
+        match rule{
+            Rule::CoreRule(core) =>{
+                let does_match = problem[depth] == *core;
+                #[cfg(test)]{
+                    for core_rule in problem.content.iter(){
+                        print!("{core_rule}");
+                    }
+                    println!("[{depth}] == {core} <-- {}", does_match);
+                    for _ in 0..depth{
+                        print!(" ");
+                    }
+                    println!("^");
+                }
+                match does_match{
+                    true => return Some(vec![problem.content[depth]]),
+                    false => return None,
+                }
+            },
+            Rule::RuleLogic(new_rule) => {
+                for new_key in new_rule.set.iter(){
+                    if let Some(mut old_vec) = traverse_rules(rules, problem, new_key, depth+1){
+                        let mut new_vec = vec![problem.content[depth]];
+                        new_vec.append(&mut old_vec);
+                        return Some(new_vec);
+                    }
+                }
+            },
         }
     }
-}
-trait IntoRule<Char>{
-    fn to_rule(&self) -> Option<Rule>;
-}
-impl IntoRule<char> for char{
-    fn to_rule(&self) -> Option<Rule> {
-        match self{
-            'a' => {
-                Some(Rule::CoreRule { rule: 'a'.to_core_rule().unwrap() })},
-            'b' => Some(Rule::CoreRule { rule: 'b'.to_core_rule().unwrap() }),
-            _ => None
-
-        }
-    }
+    None
 }
 
-#[derive(Clone,Debug)]
-struct Logic{
-    set_a: Vec<u32>,
-    set_b: Vec<u32>
-}
-#[derive(Clone,Debug)]
-enum Rule{
-    CoreRule{ rule: CoreRule },
-    RuleLogic{ logic: Logic }
+fn traverse_rules_initializer(rules:&HashMap<u32,Vec<Rule>>, problem:&CoreRuleVec)->Option<Vec<CoreRule>>{
+    let ans = traverse_rules(&rules, problem, &0, 0);
+    ans
 }
 
-fn recursively_traverse_rules(rules: &HashMap<u32, Rule>, current_key:u32, active_input:&Vec<CoreRule>, active_idx:usize) -> bool{
-    let current_rule = rules.get(&current_key).unwrap();
-    println!(" {current_rule:?}")
-    match current_rule{
-        Rule::CoreRule { rule } => return &active_input[active_idx] == rule,
-        Rule::RuleLogic { logic } => {
-            let a_matches = logic
-                .set_a
-                .iter()
-                .enumerate()
-                .map(|(i,new_key)|{
-                    recursively_traverse_rules(rules, *new_key, active_input, active_idx+i)
-                }).fold(true, |acc, b| acc && b);
-            if !a_matches{
-                let b_matches = logic
-                    .set_b
-                    .iter()
-                    .enumerate()
-                    .map(|(i,new_key)|{
-                        recursively_traverse_rules(rules, *new_key, active_input, active_idx+i)
-                    }).fold(true, |acc, b| acc && b);
-                return b_matches;
-            }else{
-                return true;
-            }
-        },
-    }
-}
-
-fn clean_rules(raw_rules: &HashMap<u32, Vec<Vec<String>>>) -> HashMap<u32, Rule>{
-    raw_rules.iter().map(|(key,val)|{
-        if      val[0][0] == "\"a\""{ (*key,'a'.to_rule().unwrap()) }
-        else if val[0][0] == "\"b\""{ (*key,'b'.to_rule().unwrap()) }
-        else{
-            let set_a = val[0].iter().map(|s| s.parse::<u32>().unwrap()).collect::<Vec<u32>>();
-            let set_b = val[0].iter().map(|s| s.parse::<u32>().unwrap()).collect::<Vec<u32>>();
-            (*key, Rule::RuleLogic { logic: Logic { set_a, set_b } })
-        }
-    }).collect::<HashMap<u32,Rule>>()
-}
+fn merge_rules(rules:&HashMap<u32,Vec<Rule>>) -> CoreRuleVec
 pub fn main_1(file_name:&str)->Option<i32>{
     let data_string = read_to_string(file_name).unwrap();
-    let (raw_rules, inputs) = get_rules(&data_string);
-    let rules = clean_rules(&raw_rules);
+    let (rules,inputs) = get_rules(&data_string);
+    for input in inputs.iter(){
+        let ans = traverse_rules(&rules, input, &0, 0);
+        println!("\n");
+
+    }
     todo!()
+
 }
 
 #[cfg(test)]
@@ -165,27 +222,17 @@ pub fn main_1(file_name:&str)->Option<i32>{
     use super::*;
 
     #[test]
-    fn rules_test(){
-        let file_name = r"src\dummy.txt";
-        let data_string = read_to_string(file_name).unwrap();
-        let (raw_rules, raw_inputs) = get_rules(&data_string);
-        let rules = clean_rules(&raw_rules);
-        let inputs = raw_inputs
-            .iter()
-            .map(|s| 
-                s.chars().map(|c| 
-                    c.to_core_rule().unwrap() 
-                ).collect::<Vec<CoreRule>>()
-            ).collect::<Vec<Vec<CoreRule>>>();
-
-        let mut counter = 0;
-        for input in inputs.iter() {
-            if recursively_traverse_rules(&rules, 0, input, 0){
-                counter += 1;
-            }
+    fn simplified_dummy_test(){
+        let data_string = read_to_string(r"src\dummy_simplified.txt").unwrap();
+        let (rules,inputs) = get_rules(&data_string);
+        let solutions = vec![false,false,true,true,false];
+        for (idx, input) in inputs.iter().enumerate(){
+            let ans = traverse_rules_initializer(&rules, &input);
+            println!("{ans:?}");
+            assert_eq!(solutions[idx],ans.is_some())
+            
         }
-        println!("Counter: {counter}");
-        assert!(false)    
+        assert!(false)
     }
 
 }

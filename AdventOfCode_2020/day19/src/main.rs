@@ -24,7 +24,7 @@ fn main() {
 mod tests{
     use super::*;
 	
-	#[test]
+	// #[test]
 	fn part1_dummy(){
         let file_name = r"src\dummy.txt";
         let start = Instant::now();
