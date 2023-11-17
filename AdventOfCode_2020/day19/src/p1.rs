@@ -10,9 +10,6 @@ pub enum CoreRule{
 pub struct CoreRuleVec{
     content: Vec<CoreRule>
 }
-pub struct AltRules{
-    alt_rules: Vec<CoreRuleVec>
-}
 #[derive(Clone,Debug)]
 pub struct Logic{
     set: Vec<u32>,
@@ -85,8 +82,8 @@ impl Index<usize> for Logic {
 impl Display for CoreRule{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self{
-            CoreRule::A => write!(f,"a"),
-            CoreRule::B => write!(f,"b")
+            CoreRule::A => write!(f,"A"),
+            CoreRule::B => write!(f,"B")
         }
     }
 }
@@ -121,7 +118,7 @@ fn get_rule(row:&str)->Result<(u32,Vec<Rule>),anyhow::Error>{
         .iter()
         .filter_map(|rule_group|{
             let rules = rule_group.split(" ").collect::<Vec<&str>>();
-            if rules.len() == 1{
+            if rules.len() == 1 && (rules[0] == "\"a\"" || rules[0] == "\"b\""){
                 match rules[0]{
                     "\"a\"" => 'a'.to_rule(),
                     "\"b\"" => 'b'.to_rule(),
@@ -135,7 +132,7 @@ fn get_rule(row:&str)->Result<(u32,Vec<Rule>),anyhow::Error>{
     let name_key = name.parse::<u32>().with_context(|| anyhow!("Failed to convert {name} to u32"))?;
     Ok((name_key, all_rules))
 }
-pub fn get_rules(data_string:&str)-> (HashMap<u32,Vec<Rule>>, Vec<CoreRuleVec>){
+pub fn get_rules(data_string:&str)-> (HashMap<u32,Vec<Rule>>, Vec<Vec<CoreRule>>){
     // "rules" hold <rule_name,Vec<Vec<Rule_set_1>,Rule_set_2>>
     let rules = data_string
         .lines()
@@ -155,62 +152,85 @@ pub fn get_rules(data_string:&str)-> (HashMap<u32,Vec<Rule>>, Vec<CoreRuleVec>){
         .filter_map(|line| {
             if line.starts_with("a") || line.starts_with("b"){
                 let content = line.chars().filter_map(|c| c.to_core_rule()).collect::<Vec<CoreRule>>();
-                Some(CoreRuleVec{content})
+                Some(content)
             }else{
                 None
             }
-        }).collect::<Vec<CoreRuleVec>>();
+        }).collect::<Vec<Vec<CoreRule>>>();
 
     (rules,inputs)
 }
 
-fn traverse_rules(rules:&HashMap<u32,Vec<Rule>>, problem:&CoreRuleVec, key:&u32, depth:usize)->Option<Vec<CoreRule>>{
-    let rule_set = rules.get(&key).expect("Infallable, as we traverse known keys.");
-    for rule in rule_set.iter(){
+fn compare_states(current_state: &Vec<CoreRule>, target_state: &Vec<CoreRule>) -> bool{
+    current_state.iter().zip(target_state.iter()).fold(true, |acc,(current,real)| {
+        #[cfg(test)]
+        print!("{current} vs {real} ->  {} && ", current == real);
+        acc && (current == real)
+    })
+}
+fn traverse_rules(rules:&HashMap<u32,Vec<Rule>>, input:&Vec<CoreRule>, current_key:&u32, current_state: &Vec<CoreRule>)->Option<Vec<CoreRule>>{
+    // println!("Current_key: {current_key}");
+    let current_rules = rules.get(current_key).expect("We only traverse existing keys!");
+    // println!("Current_rules: {current_rules:?}");
+    'outer: for rule in current_rules.iter() {
         match rule{
-            Rule::CoreRule(core) =>{
-                let does_match = problem[depth] == *core;
-                #[cfg(test)]{
-                    for core_rule in problem.content.iter(){
-                        print!("{core_rule}");
-                    }
-                    println!("[{depth}] == {core} <-- {}", does_match);
-                    for _ in 0..depth{
-                        print!(" ");
-                    }
-                    println!("^");
-                }
-                match does_match{
-                    true => return Some(vec![problem.content[depth]]),
-                    false => return None,
-                }
+            Rule::CoreRule(core) => {
+                // If we find a leaf, send it back to compose the whole.
+                let mut new_state = current_state.clone() ;
+                new_state.push(*core);
+                return Some(new_state);
             },
-            Rule::RuleLogic(new_rule) => {
-                for new_key in new_rule.set.iter(){
-                    if let Some(mut old_vec) = traverse_rules(rules, problem, new_key, depth+1){
-                        let mut new_vec = vec![problem.content[depth]];
-                        new_vec.append(&mut old_vec);
-                        return Some(new_vec);
+            Rule::RuleLogic(logic) => {
+                // Not a leaf, so we must continue to find leaves.
+                // ALL "logic" content must be valid, so if any is not valid, we abort this rule and check the next.
+                let mut must_fulfill: Vec<CoreRule> = vec![];
+                for new_key in logic.set.iter(){
+                    let mut new_solution = match traverse_rules(rules, input, new_key, current_state){
+                        Some(v) => v,
+                        None => continue 'outer // All logic-rules must be fulfilled, but only one of the outer rules must be!
+                    };
+                    must_fulfill = {
+                        new_solution.append(&mut must_fulfill);
+                        new_solution
                     }
                 }
+                // If all "logic" matches, we've found a path that is valid so far, so we can return it. No need to find other valid end-paths.
+                // Note: We reverse the "must_fulfill" vec because our suggested solution appears in reverse, but the input appears in the correct order. 
+                let matches_so_far = compare_states(&must_fulfill, input);
+                #[cfg(test)]{
+                    println!();
+                    for _ in 0..input.len()-must_fulfill.len(){
+                        print!(" ")
+                    }
+                    for cr in must_fulfill.iter(){
+                        print!("{cr}");
+                    }     
+                    println!();
+                    for inp in input.iter(){
+                        print!("{inp}");
+                    } 
+                    println!("\nmatches_so_far: {matches_so_far}");
+                    println!();
+                }
+                if matches_so_far{
+                    return Some(must_fulfill);
+                }
+                // If its not valid, then we continue checking the next rule.
+
             },
         }
     }
+
     None
 }
 
-fn traverse_rules_initializer(rules:&HashMap<u32,Vec<Rule>>, problem:&CoreRuleVec)->Option<Vec<CoreRule>>{
-    let ans = traverse_rules(&rules, problem, &0, 0);
-    ans
+fn traverse_rules_init(rules:&HashMap<u32,Vec<Rule>>, input:&Vec<CoreRule>) -> bool{
+    traverse_rules(rules,input,&0,&vec![]).is_some() // If we find ANY solution, then we're good to go.
 }
-
-fn merge_rules(rules:&HashMap<u32,Vec<Rule>>) -> CoreRuleVec
 pub fn main_1(file_name:&str)->Option<i32>{
     let data_string = read_to_string(file_name).unwrap();
     let (rules,inputs) = get_rules(&data_string);
     for input in inputs.iter(){
-        let ans = traverse_rules(&rules, input, &0, 0);
-        println!("\n");
 
     }
     todo!()
@@ -227,12 +247,39 @@ pub fn main_1(file_name:&str)->Option<i32>{
         let (rules,inputs) = get_rules(&data_string);
         let solutions = vec![false,false,true,true,false];
         for (idx, input) in inputs.iter().enumerate(){
-            let ans = traverse_rules_initializer(&rules, &input);
-            println!("{ans:?}");
-            assert_eq!(solutions[idx],ans.is_some())
-            
+            assert_eq!(traverse_rules_init(&rules,input),solutions[idx], "idx == {idx} | {input:?}");
         }
         assert!(false)
+    }
+    #[test]
+    fn dummy_trivial3_test(){
+        let data_string = read_to_string(r"src\dummy_trivial3.txt").unwrap();
+        let (rules,inputs) = get_rules(&data_string);
+        let solutions = vec![false,true];
+        for (idx, input) in inputs.iter().enumerate(){
+            assert_eq!(traverse_rules_init(&rules,input),solutions[idx], "idx == {idx} | {input:?}");
+        }
+    }
+    #[test]
+    fn dummy_trivial4_test(){
+        let data_string = read_to_string(r"src\dummy_trivial4.txt").unwrap();
+        let (rules,inputs) = get_rules(&data_string);
+        println!("Rules: {rules:?}");
+        let solutions = vec![false,true];
+        for (idx, input) in inputs.iter().enumerate(){
+            assert_eq!(traverse_rules_init(&rules,input),solutions[idx], "idx == {idx} | {input:?}");
+        }
+    }
+    #[test]
+    fn dummy_trivial5_test(){
+        let data_string = read_to_string(r"src\dummy_trivial5.txt").unwrap();
+        let (rules,inputs) = get_rules(&data_string);
+        println!("Rules: {rules:?}");
+
+        let solutions = vec![false,true];
+        for (idx, input) in inputs.iter().enumerate(){
+            assert_eq!(traverse_rules_init(&rules,input),solutions[idx], "idx == {idx} | {input:?}");
+        }
     }
 
 }
