@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [workspace]
 members = [
+"./AdventOfCode_2023/day1",
+
 # "./AdventOfCode_2020/day1",
 # "./AdventOfCode_2020/day2",
 # "./AdventOfCode_2020/day3",
@@ -25,6 +27,7 @@ members = [
 "./AdventOfCode_2020/day17",
 "./AdventOfCode_2020/day18",
 "./AdventOfCode_2020/day19",
+"./AdventOfCode_2020/day20",
 
 
 # "./AdventOfCode_2021/day1",
