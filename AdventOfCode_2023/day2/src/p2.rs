@@ -30,12 +30,42 @@ enum Cube{
 impl Cube{
     fn new(cube:&str)->Self{
         match cube{
-            "red" => Self::Red,
-            "blue" => Self::Blue,
+            "red"   => Self::Red,
+            "blue"  => Self::Blue,
             "green" => Self::Green,
             _ => panic!()
         }
     }
+}
+fn process_round(section:&str)->Round{
+    let cubes_found = section
+        .split(", ")
+        .map(|pair|{
+            let cubes = TryInto::<[&str;2]>::try_into(pair.split(" ").collect::<Vec<&str>>()).unwrap();
+            let cube_count = cubes[0].parse::<u32>().unwrap();
+            let cube_type = Cube::new(cubes[1]);
+            (cube_count,cube_type)
+        });
+
+    let mut red_count   = 0;
+    let mut blue_count  = 0;
+    let mut green_count = 0;
+    for (count, ctype) in cubes_found{
+        match ctype{
+            Cube::Red   => red_count   = count,
+            Cube::Blue  => blue_count  = count,
+            Cube::Green => green_count = count
+        }
+    }
+Round{red:red_count, blue:blue_count, green:green_count}
+}
+fn process_game(game_line:&str)->Game{
+    let rounds = game_line
+        .split("; ")
+        .map(|section| {
+            process_round(section)
+        }).collect::<Vec<Round>>();
+    Game::new(rounds)
 }
 fn process_data_string(data_string:&str)->Vec<Game>{
     data_string
@@ -44,31 +74,7 @@ fn process_data_string(data_string:&str)->Vec<Game>{
             line.split(": ").collect::<Vec<&str>>()[1]
         })
         .map(|game_line| {
-            let rounds = game_line
-                .split("; ")
-                .map(|section| {
-                    let cubes_found = section
-                        .split(", ")
-                        .map(|pair|{
-                            let cubes = TryInto::<[&str;2]>::try_into(pair.split(" ").collect::<Vec<&str>>()).unwrap();
-                            let cube_count = cubes[0].parse::<u32>().unwrap();
-                            let cube_type = Cube::new(cubes[1]);
-                            (cube_count,cube_type)
-                        });
-
-                    let mut red_count = 0;
-                    let mut blue_count = 0;
-                    let mut green_count = 0;
-                    for (count, ctype) in cubes_found{
-                        match ctype{
-                            Cube::Red=> red_count = count,
-                            Cube::Blue => blue_count = count,
-                            Cube::Green => green_count = count
-                        }
-                    }
-                    Round{red:red_count, blue:blue_count, green:green_count}
-                }).collect::<Vec<Round>>();
-            Game::new(rounds)
+            process_game(game_line)
         }).collect::<Vec<Game>>()
 }
 
