@@ -7,6 +7,7 @@ edition = "2021"
 [workspace]
 members = [
 "./AdventOfCode_2023/day1",
+"./AdventOfCode_2023/day2",
 
 # "./AdventOfCode_2020/day1",
 # "./AdventOfCode_2020/day2",
