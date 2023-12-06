@@ -15,7 +15,7 @@ fn merge_ranges(mut ranges:Vec<[u64;2]>)->Vec<[u64;2]> {
 }
 
 fn get_range_overlap(a:[u64;2], b:[u64;2])->Option<[u64;2]>{
-    
+    todo!()
 }
 impl Almanac{
     fn id_in_ranges_reverse(id:u64, range: &Vec<[u64;3]>)->u64{
