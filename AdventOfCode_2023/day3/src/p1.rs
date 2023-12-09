@@ -1,201 +1,225 @@
 use std::{fs::read_to_string, collections::HashMap};
 
-type IsActive = bool;
-
-#[derive(Clone,Copy,Debug, PartialEq)]
-enum Symbol{
-    Value(i32),
-    Plus(IsActive),
-    Minus(IsActive),
-    Multiply(IsActive),
-    Divide(IsActive),
-    Modulo(IsActive),
-    Other(IsActive)
+#[derive(Debug,Clone,Copy,PartialEq)]
+enum ValRef{
+    Ref([usize;2]),
+    Val(i32)
 }
-impl Symbol{
+#[derive(Debug,Clone,Copy,PartialEq)]
+enum Symbol{
+    Pluss,
+    Minus,
+    Mult,
+    Div,
+    Other
+}
+#[derive(Debug,Clone,Copy,PartialEq)]
+enum Component{
+    Value(ValRef),
+    Symbol(Symbol),
+    Space
+}
+impl Component{
     fn new(s:&str)->Self{
-        if s.len() > 1{
-            Symbol::Value(s.parse::<i32>().unwrap())
+        if let Ok(val) = s.parse::<i32>(){
+            Component::Value(ValRef::Val(val))
         }else{
             match s{
-                "+" => Self::Plus(true),
-                "-" => Self::Minus(true),
-                "*" => Self::Multiply(true),
-                "/" => Self::Divide(true),
-                "#" => Self::Modulo(true),
-                _   => Self::Other(true)
+                "+" => Self::Symbol(Symbol::Pluss),
+                "-" => Self::Symbol(Symbol::Minus),
+                "*" => Self::Symbol(Symbol::Mult),
+                "/" => Self::Symbol(Symbol::Div),
+                _ => Self::Symbol(Symbol::Other),
             }
         }
+    }
+    fn is_value(&self)->bool{
+        if let Component::Value(_) = &self{
+            return true;
+        }
+        false
+        
+    }
+    fn is_symbol(&self)->bool{
+        !self.is_value()
+    }
+    fn len(&self)->usize{
+        if let Component::Value(ValRef::Val(v)) = self{
+            format!("{v}").len()
+        }else if self.is_symbol(){
+            1
+        }else{
+            todo!("Add \".len()\" format to valref::ref");
+        }
+
     }
 }
-fn extract_adjacent_symbols(s:&str) -> Vec<&str>{
-    if s.len() == 0{
-        return vec![];
-    }else if s.len() == 1{
-        return vec![s];
+fn extract_symbols_from_section(section:&str)->Vec<Component>{
+    // println!("{section}");
+    if section.len() == 0 || section =="."{
+        return vec![Component::Space];
     }
-    print!("{s}");
     let mut output = vec![];
-    let chars = s.chars().collect::<Vec<char>>();
-    // let mut non_num_count = chars.clone().iter().filter(|c| !c.is_numeric() ).fold(0,|acc,_| acc+1 );
-    let mut left =0;
-    'main_loop: while left < chars.len(){
+    let mut left = 0;
+    let chars = section.chars().collect::<Vec<char>>();
+    while left < section.len(){
         if !chars[left].is_numeric(){
-            while left < chars.len() && !chars[left].is_numeric(){
-                output.push(&s[left..left+1]);
-                println!("\t{}",&s[left..left+1]);
-                left+=1;
-            }
-            if left == chars.len(){
-                break 'main_loop;
-            }
+            output.push(Component::new(&section[left..left+1]));
+            left += 1;
+            continue; // Restart the loop in case we encounter another symbol instead of a number.
         }
-        let mut right = left+1;
-        while right < chars.len() && chars[right].is_numeric(){
-            right+=1;
+        let mut right = left;
+        while right < section.len() && chars[right].is_numeric(){
+            right +=1;
         }
-        if right == chars.len(){
-            println!("\t{}",&s[left..right]);
-            output.push(&s[left..right]);
-        }else{
-            println!("\t{}",&s[left..right]);
-            output.push(&s[left..right]);
-        }
+        output.push(Component::new(&section[left..right]));
         left = right;
     }
     output
 }
-fn process_data(data_string:&str)->(HashMap<[usize;2],Symbol>, Vec<[usize;2]>){
-    let mut insertion_order = vec![];
-    let mut output = HashMap::<[usize;2],Symbol>::new();
-    for (row_num, row) in data_string.lines().enumerate(){
-        let mut col_num = 0;
-        for col in row.split("."){
-            let col_elements = extract_adjacent_symbols(col);
-            for &element in col_elements.iter(){
-                let el_len = element.len();
-                let symbol = Symbol::new(element);
-                // println!("{element}, {el_len}, {symbol:?}");
-                for idx in col_num..col_num+el_len{
-                    // println!("\t[{row_num}, {idx}], {symbol:?}");
-                    output.insert([row_num, idx], symbol);
-                    insertion_order.push([row_num,idx])
-                }
-                col_num += el_len;
-            }
-            // if col_elements.len() > 0{
-            //     println!();
-            // }
-            col_num += 1;
+
+fn split_line(line:&str)->Vec<&str>{
+    let mut output = vec![];
+    let mut left = 0;
+    let chars = line.chars().collect::<Vec<char>>();
+    while left < line.len(){
+        if !chars[left].is_numeric(){
+            output.push(&line[left..left+1]);
+            left += 1;
+            continue; // Restart the loop in case we encounter another symbol instead of a number.
         }
-    } 
-    (output, insertion_order)
+        let mut right = left;
+        while right < line.len() && chars[right].is_numeric(){
+            right +=1;
+        }
+        output.push(&line[left..right]);
+        left = right;
+    }
+    output
 }
-fn get_2d_neighbours(coord:&[usize;2])->Vec<[usize;2]>{
-    let mut output = Vec::with_capacity(8);
+fn process_data_string(data_string:&str)->(HashMap<[usize;2],ValRef>,HashMap<[usize;2],Symbol>){
+    let mut values = HashMap::<[usize;2],ValRef>::new();
+    let mut symbols = HashMap::<[usize;2],Symbol>::new();
+    for (xidx, line) in data_string.lines().enumerate(){
+        let mut yidx = 0;
+        for section in split_line(line).into_iter(){
+            // ""-sections will automatically be skipped as a consequence of "extract_symbols_from_section" returning "[]".
+            if section.len() == 0{
+                yidx += 1;
+                // print!(".");
+                continue;
+            }else {
+                // print!("{section}"); 
+            }
+            let components = extract_symbols_from_section(section);
+            for component in components.iter(){
+                let coord = [xidx,yidx];
+                match component{
+                    Component::Space => (),
+                    Component::Symbol(symbol) => {symbols.insert(coord, *symbol);},
+                    Component::Value(ValRef::Val(v)) => {
+                        // Insert the value
+                        values.insert(coord, ValRef::Val(*v));
+                        // If value has more than 1 digit, we insert a "reference" to that value instead.
+                        for length in 1..component.len(){
+                            let new_coord = [coord[0], coord[1] + length]; 
+                            values.insert(new_coord, ValRef::Ref(coord));
+                        }
+                        yidx += component.len()-1;
+                    },
+                    Component::Value(ValRef::Ref(_)) => panic!("Not possible to happen at this point in the process."),
+                }
+                yidx += 1;
+            }
+        }
+        // println!();
+    }
+    // println!();
+
+    (values,symbols)
+}
+fn print_grid(values: &HashMap<[usize;2],ValRef>, symbols: &HashMap<[usize;2],Symbol>){
+    panic!();
+    let max_x_val = values.iter().fold(0, |acc,([x,_],_)| if *x > acc{*x}else{acc});
+    let max_x_sym= symbols.iter().fold(0, |acc,([x,_],_)| if *x > acc{*x}else{acc});
+    let max_y_val = values.iter().fold(0, |acc,([_,y],_)| if *y > acc{*y}else{acc});
+    let max_y_sym= symbols.iter().fold(0, |acc,([_,y],_)| if *y > acc{*y}else{acc});
+    let max_x = std::cmp::max(max_x_val,max_x_sym);
+    let max_y = std::cmp::max(max_y_val,max_y_sym);
+    for x in 0..=15{
+        for y in 0..=15{
+            let coord = [x,y];
+            if !values.contains_key(&coord) && !symbols.contains_key(&coord){
+                print!(".");
+            }else if let Some(ValRef::Val(value)) = values.get(&coord){
+                print!("{value}");
+            }else if let Some(ValRef::Ref(_)) = values.get(&coord){
+                ()
+            }else if let Some(symbol) = symbols.get(&coord){
+                match symbol{
+                    Symbol::Pluss   => print!("+"),
+                    Symbol::Minus   => print!("-"),
+                    Symbol::Mult    => print!("*"),
+                    Symbol::Div     => print!("/"),
+                    Symbol::Other   => print!("#"),
+                }
+            }
+        }
+        println!();
+    }
+    println!();
+}
+
+fn get_2d_neighbours(coord: &[usize;2]) -> Vec<[usize;2]>{
+    let mut output = vec![];
     for i in -1..=1{
         for j in -1..=1{
-            if i == 0 && j == 0 {
-                continue;
+            let a = coord[0] as i64;
+            let b = coord[1] as i64;
+            if (i != 0 || j != 0) && ( a+i >= 0 && b+j >= 0 )  {
+                let x = (a + i ) as usize;
+                let y = (b + j ) as usize;
+                output.push([x,y]);
             }
-            let new_x = coord[0] as i64 + i;
-            let new_y = coord[1] as i64 + j;
-            if new_x < 0 || new_y < 0{
-                continue;
-            }
-            output.push([new_x as usize, new_y as usize]);
         }
     }
     output
 }
 pub fn main_1(file_name:&str)->Option<i32>{
     let data_string = read_to_string(file_name).unwrap();
-    let (matrix, insertion_order) = process_data(&data_string);
-    let mut output = 0;
-    let mut last_symbol = Symbol::Other(false);// Arbitary temp symbol;
-    let mut last_idx = [usize::MAX;2]; // Temp idx
-    let mut neighbour_found = false;
-    for key in insertion_order.iter(){
-        let val = matrix.get(key).unwrap();
-        // If we found an adjacent symbol for this value, dont look any more. One symbol per value. Add each value one or zero times.
-        if &last_symbol == val && last_idx == [key[0],key[1]-1]{
-            last_idx = *key;
-            if neighbour_found{
-                continue;
-            }
-        }
-        #[cfg(test)]{rr
-            if last_idx[0] < key[0]{
-                println!();
-            }
-            if last_symbol != *val{
-                let to_print = match val{
-                    Symbol::Value(v) => format!("{v}"),
-                    Symbol::Plus(_) => "+".to_string(),
-                    Symbol::Minus(_) => "-".to_string(),
-                    Symbol::Multiply(_) => "*".to_string(),
-                    Symbol::Divide(_) => "/".to_string(),
-                    Symbol::Modulo(_) => "#".to_string(),
-                    Symbol::Other(_) => "?".to_string(),
-                };
-                print!("{to_print} ");
-            }
-        }
-        last_symbol = *val;
-        last_idx = *key;
-        neighbour_found = false;
-
-        // To prevent iterating over the same value n times.
-        if let Symbol::Value(current_val) = val{
-            // if ANY symbol is adjacent to the current value, add it.
-            let neighbours = get_2d_neighbours(key);
-            'neighbour_loop: for nei in neighbours.iter(){
-                if let Some( symbol) = matrix.get(nei){
-                    match symbol{
-                        Symbol::Value(_)    => (),
-                        _    => {
-                            output += current_val;
-                            neighbour_found = true;
-                            break 'neighbour_loop; // We only need to verify we have ONE neighbour, else we get too many additions.
-                        },
-                    }
+    let (mut values, symbols) = process_data_string(&data_string);
+    let mut keys = values.keys().map(|key| key.clone()).collect::<Vec<[usize;2]>>();
+    keys.sort();
+    let mut total = 0;
+    'key_loop: for key in keys.into_iter(){
+        for neighbour in get_2d_neighbours(&key){
+            // Check if any symbol is adjacent to the neighbour.
+            if symbols.contains_key(&neighbour){
+                // Find the correct value if the key does not point to it directly.
+                let mut new_key = key;
+                while let Some(ValRef::Ref(nested_key)) = values.get(&new_key){
+                    new_key = *nested_key;
                 }
+                if let Some(ValRef::Val(v)) = values.get_mut(&new_key){
+                    total += *v;
+                    *v = 0; // Once we've used the value once, we "kill" it so we don't end up adding it again.
+                }
+                continue 'key_loop;
             }
         }
     }
-    Some(output)
-
+    Some(total)    
 }
 
 #[cfg(test)]
     mod tests{
-    use std::time::Instant;
-
     use super::*;
-	#[test]
-	fn zero_puzzle(){
-        let file_name = r"src\dummy_zero.txt";
-        let start = Instant::now();
-        let count = main_1(file_name);
-        let end = start.elapsed();
-        println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
-        if let Some(actual_value) = count{
-            let expected_value = 0;
-            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}\n__________________________");
-        }
 
-    }
     #[test]
-    fn correct_neighbours_test(){
-        let base = [1,1];
-        let expected_neighbours = vec![[0,0], [0,1], [1,0], [1,2],[2,1],[2,2], [0,2],[2,0]];
-        let found_neighbours = get_2d_neighbours(&base);
-        for n in found_neighbours.clone().iter(){
-            assert!(expected_neighbours.contains(&n));
-        }
-        for n in expected_neighbours{
-            assert!(found_neighbours.contains(&n));
-        }
+    fn extraction_test(){
+        let output = extract_symbols_from_section("*123/");
+        let expected = vec![Component::Symbol(Symbol::Mult), Component::Value(ValRef::Val(123)), Component::Symbol(Symbol::Div)];
+        output.iter().zip(expected.iter()).for_each(|(found,correct)| assert_eq!(found,correct));
     }
 
 }

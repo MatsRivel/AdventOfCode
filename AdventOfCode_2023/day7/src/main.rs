@@ -4,13 +4,13 @@ use crate::p1::main_1;
 use crate::p2::main_2;
 use std::time::Instant;
 fn main() {
-
   // Part1 Puzzle:
   let file_name= r"src\puzzle.txt";
   let start = Instant::now();
   let count = main_1(file_name);
   let end = start.elapsed();
   println!("\nPart 1 Puzzle: {count:?}\nRuntime: {end:?}");
+  assert!(count.unwrap() == 251287184);
 
   // Part2 Puzzle:
   let file_name= r"src\puzzle.txt";
@@ -18,6 +18,7 @@ fn main() {
   let count = main_2(file_name);
   let end = start.elapsed();
   println!("\nPart 2 Puzzle: {count:?}\nRuntime: {end:?}");
+  assert!(count.unwrap()<250808911) 
 
 }
 #[cfg(test)]
@@ -32,11 +33,10 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = 4361;
+            let expected_value = 6440;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}\n__________________________");
         }
-
-        }
+    }
 
 	#[test]
 	fn part2_dummy(){
@@ -46,9 +46,9 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = 467835;
+            let expected_value = 5905;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
-    }
+        }
 	}
 	
 }

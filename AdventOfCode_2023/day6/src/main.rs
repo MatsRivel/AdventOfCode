@@ -4,7 +4,6 @@ use crate::p1::main_1;
 use crate::p2::main_2;
 use std::time::Instant;
 fn main() {
-
   // Part1 Puzzle:
   let file_name= r"src\puzzle.txt";
   let start = Instant::now();
@@ -32,11 +31,10 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = 4361;
+            let expected_value = 288;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}\n__________________________");
         }
-
-        }
+    }
 
 	#[test]
 	fn part2_dummy(){
@@ -46,9 +44,9 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = 467835;
+            let expected_value = 71503;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
-    }
+        }
 	}
 	
 }

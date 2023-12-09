@@ -32,7 +32,7 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = 4361;
+            let expected_value = 13;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}\n__________________________");
         }
 
@@ -46,7 +46,7 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = 467835;
+            let expected_value = 30;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
     }
 	}
