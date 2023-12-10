@@ -32,21 +32,34 @@ mod tests{
         let end = start.elapsed();
         println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = todo!();
+            let expected_value = 2;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}\n__________________________");
         }
 
+    }
+	#[test]
+	fn part1_dummy2(){
+        let file_name = r"src\dummy2.txt";
+        let start = Instant::now();
+        let count = main_1(file_name);
+        let end = start.elapsed();
+        println!("\nPart 1 Dummy: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            let expected_value = 6;
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}\n__________________________");
         }
+
+    }
 
 	#[test]
 	fn part2_dummy(){
-        let file_name = r"src\dummy.txt";
+        let file_name = r"src\dummy3.txt";
         let start = Instant::now();
         let count = main_2(file_name);
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = todo!();
+            let expected_value = 6;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
     }
 	}
