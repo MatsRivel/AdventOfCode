@@ -69,7 +69,8 @@ enum Pipe{
     NtoW,
     EtoS,
     EtoW,
-    StoW
+    StoW,
+    Invalid
 }
 impl Pipe{
     fn new(c:char)->Self{
@@ -81,6 +82,28 @@ impl Pipe{
             '7' => Self::StoW,
             'F' =>  Self::EtoS,
             _ => panic!()
+        }
+    }
+}
+impl From<[Dir;2]> for Pipe{
+    fn from(value: [Dir;2]) -> Self {
+        match value{
+            [Dir::N, Dir::E] => Self::NtoE,
+            [Dir::E, Dir::N] => Self::NtoE,
+            [Dir::N, Dir::S] => Self::NtoS,
+            [Dir::S, Dir::N] => Self::NtoS,
+            [Dir::N, Dir::W] => Self::NtoW,
+            [Dir::W, Dir::N] => Self::NtoW,
+            [Dir::S, Dir::E] => Self::EtoS,
+            [Dir::E, Dir::S] => Self::EtoS,
+            [Dir::S, Dir::W] => Self::StoW,
+            [Dir::W, Dir::S] => Self::StoW,
+            [Dir::E, Dir::W] => Self::EtoW,
+            [Dir::W, Dir::E] => Self::EtoW,
+            [Dir::N, Dir::N] => Self::Invalid,
+            [Dir::S, Dir::S] => Self::Invalid,
+            [Dir::E, Dir::E] => Self::Invalid,
+            [Dir::W, Dir::W] => Self::Invalid,
         }
     }
 }
@@ -98,6 +121,7 @@ struct Node{
             Pipe::EtoS => [coords.east(),  coords.south()],
             Pipe::EtoW => [coords.east(),  coords.west() ],
             Pipe::StoW => [coords.south(), coords.west() ],
+            Pipe::Invalid => panic!("Should never exist. Only an option for satisfying the \"From\" trait")
         };
         Self { coords, pipe, neighbours }
 
@@ -149,7 +173,7 @@ fn initialize_traverse_tiles(tiles: &Vec<Vec<Tile>>, start:&Coord, current:&Coor
         });
     for neighbour in neighbours{
         if let Some(other_neighbour) = traverse_tiles(tiles, start, current, last){
-            let neighbour_dir = 
+            let neighbour_dir = todo!();
         }
     }
     todo!()
