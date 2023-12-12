@@ -187,9 +187,8 @@ pub fn main_1(file_name:&str)->Option<u32>{
     let data_string = read_to_string(file_name).unwrap();
     let mut data = process_data_string(data_string);
     data.sort();
-    let total = data.iter().enumerate().fold(0, |acc,(idx, (_hand,bid))| acc + (idx as u32+1)* *bid);
+    let total = data.iter().enumerate().fold(0, |acc,( idx, (_hand,bid) )| acc + (idx as u32+1)* *bid);
     Some(total)
-
 }
 
 #[cfg(test)]
