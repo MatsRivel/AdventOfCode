@@ -39,59 +39,157 @@ impl Adjust for Coord{
         }
     }
 }
-#[derive(Clone,Copy,Debug)]
+#[derive(Clone,Copy,Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Dir{
     N,
     S,
     E,
     W
 }
-
-struct Tile{
-    dirs: Vec<Dir>
-}
-impl Tile{
-    fn len(&self)->usize{
-        self.dirs.len()
+impl Dir{
+    fn reverse(&self) -> Self{
+        match self{
+            Dir::N => Dir::S,
+            Dir::S => Dir::N,
+            Dir::E => Dir::E,
+            Dir::W => Dir::W,
+        }
     }
-    fn get_neighbours(&self, coords: Coord, max_x:usize, max_y:usize)->Vec<Coord>{
-        // For each Dir this tile includes, check if adjacent Coords are within bounds.
-        // If so, they're included in the output.
-        self.dirs
-            .iter()
-            .filter_map(|dir| {
-                match *dir{
-                    Dir::N => coords.north(),
-                    Dir::S => {
-                        if coords[0] < max_x{ coords.south()}
-                        else{None}
-                    },
-                    Dir::E => {
-                        if coords[1] < max_y{ coords.east()}
-                        else{None}
-                    },
-                    Dir::W => coords.west(),
+}
+impl From<[Coord;2]> for Dir{
+    fn from(value: [Coord;2]) -> Self {
+        // Going from value[0] to value[1] you go in direction Self.
+        // Only intended to work on adjacent tiles, not counting diagonal adjacency.
+        let [[x1,y1],[x2,y2]] = value;
+        let diff = [x2 as i32 - x1 as i32,y2 as i32 - y1 as i32];
+        match diff{
+            [ 0,-1] => Dir::W,
+            [ 0, 1] => Dir::E,
+            [-1, 0] => Dir::N,
+            [ 1, 0] => Dir::S,
+            _ => panic!("Only works for adjacent coords!")
+        }
+    }
+}
+enum Pipe{
+    NtoE,
+    NtoS,
+    NtoW,
+    EtoS,
+    EtoW,
+    StoW,
+    Start,
+    Missing
+}
+impl Pipe{
+    fn to_dirs(&self)->Option<[Dir;2]>{
+        match self{
+            Pipe::NtoE => Some([Dir::N,Dir::E]),
+            Pipe::NtoS => Some([Dir::N,Dir::S]),
+            Pipe::NtoW => Some([Dir::N,Dir::W]),
+            Pipe::EtoS => Some([Dir::E,Dir::S]),
+            Pipe::EtoW => Some([Dir::E,Dir::W]),
+            Pipe::StoW => Some([Dir::S,Dir::W]),
+            Pipe::Missing => None,
+        }
+    }
+}
+impl From<[Dir;2]> for Pipe{
+    fn from(value: [Dir;2]) -> Self {
+        match value[0]{
+            Dir::N => {
+                match value[1]{
+                    Dir::N => Pipe::Missing,
+                    Dir::S => Pipe::NtoS,
+                    Dir::E => Pipe::NtoE,
+                    Dir::W => Pipe::NtoW,
                 }
-            }).collect::<Vec<Coord>>()
+            },
+            Dir::S => {
+                match value[1]{
+                    Dir::N => Pipe::NtoS,
+                    Dir::S => Pipe::Missing,
+                    Dir::E => Pipe::EtoS,
+                    Dir::W => Pipe::StoW,
+                }
+            },
+            Dir::E => {
+                match value[1]{
+                    Dir::N => Pipe::NtoE,
+                    Dir::S => Pipe::EtoS,
+                    Dir::E => Pipe::Missing,
+                    Dir::W => Pipe::EtoW,
+                }
+            },
+            Dir::W => {
+                match value[1]{
+                    Dir::N => Pipe::NtoW,
+                    Dir::S => Pipe::StoW,
+                    Dir::E => Pipe::EtoW,
+                    Dir::W => Pipe::Missing,
+                }
+            },
+        }
     }
 }
-impl From<char> for Tile{
+impl From<char> for Pipe{
     fn from(value: char) -> Self {
-        let dirs = match value{
-            '|' => vec![Dir::N,Dir::S],
-            'L' => vec![Dir::N,Dir::E],
-            'J' => vec![Dir::N,Dir::W],
-            '-' => vec![Dir::E,Dir::W],
-            'F' => vec![Dir::E,Dir::S],
-            '7' => vec![Dir::S,Dir::W],
-            'S' => vec![Dir::N,Dir::E,Dir::S,Dir::W],
-            _ => vec![] // No neighbours if there is no pipe.
-        };
-        Self{dirs}
+        match value{
+            '-' => Self::EtoW,
+            '|' => Self::NtoS,
+            'F' => Self::EtoS,
+            'J' => Self::NtoW,
+            '7' => Self::StoW,
+            'L' => Self::NtoE,
+            '.' => Self::Missing,
+            'S' => Self::Start,
+            _ => panic!("Invalid char-to-pipe! >>{value}<<<")
+        }
     }
 }
-
-fn make_tiles(data_string:String)->(Coord,Vec<Vec<Tile>>){
+struct Node{
+    pipe: Pipe,
+    coord: Coord,
+    neighbours:Vec<Coord>
+}
+impl Node{
+    fn new(pipe:Pipe, coord:Coord, xmax:usize,ymax:usize)->Self{
+        let dirs = pipe.to_dirs().unwrap();
+        let mut neighbours = vec![];
+        for dir in dirs.into_iter(){
+            let temp = match dir{
+                Dir::N => coord.north(),
+                Dir::S => coord.south(),
+                Dir::E => coord.east(),
+                Dir::W => coord.west(),
+            };
+            if let Some(dir) = temp{
+                if dir[0] < xmax && dir[1] < ymax{
+                    neighbours.push(dir);
+                }
+            }
+        }
+        Node{pipe,coord,neighbours}
+    }
+    fn are_connected(&self, other:&Self)->bool{
+        let dir:Dir = [self.coord,other.coord].into();
+        // The pipe in "self" must point in the direction we are going.
+        if !self.pipe.to_dirs().unwrap().contains(&dir){
+            return false;
+        } 
+        // The pipe in "other" must point in the opposite direction of where we are going.
+        if !other.pipe.to_dirs().unwrap().contains(&dir.reverse()){
+            return false;
+        }
+        // The pipes must be directly, non-diagonally, adjacent.
+        let diff = [self.coord[0] as i32 - other.coord[0] as i32, self.coord[1] as i32 - other.coord[1] as i32];
+        if diff[0].abs() + diff[1].abs() > 1{
+            return false;
+        }
+        true
+    }
+}
+fn process_data_string(data_string:String)->(Coord, Vec<Vec<Node>>){
     let mut start_idx = [0usize;2];
     let tiles = data_string
         .lines()
@@ -100,66 +198,16 @@ fn make_tiles(data_string:String)->(Coord,Vec<Vec<Tile>>){
             line.chars()
             .enumerate()
             .map(|(y,c)| {
-                let tile = Tile::from(c);
-                if tile.len() == 4{
+                let pipe = Pipe::from(c);
+                if let Pipe::Start = pipe{
                     start_idx = [x,y]
                 }
-                tile
+                Node::new(pipe,[x,y], todo!("Find max x and y before this point"))
+                
             })
             .collect::<Vec<Tile>>()} )
         .collect::<Vec<Vec<Tile>>>();
     return (start_idx,tiles)
-}
-// fn neighbour_guard_clause(xy:Coord,ij:[i8;2],xy_max:Coord)->bool{
-//     // Returns true if the values break with our conditions. False otherwise.
-//     (ij[0] == ij[1] && ij[0] == 0) 
-//     || (xy[0] == 0 && ij[0] == -1) 
-//     || (xy[1] == 0 && ij[1] == -1) 
-//     || (xy[0] == xy_max[0] && ij[0] == 1)
-//     || (xy[1] == xy_max[1] && ij[1] == 1)
-// }
-// fn get_all_neighbours(coords: Coord, max_x:usize, max_y:usize)->Vec<Coord>{
-//     let mut neighbours = Vec::new();
-//     for i in -1..=1{
-//         for j in -1..=1{
-//             if neighbour_guard_clause(coords, [i,j], [max_x,max_y]){
-//                 continue;
-//             }
-//             let new_coord = [(coords[0] as i64 - i as i64) as usize,(coords[1] as i64 - j as i64) as usize ];
-//             neighbours.push(new_coord);
-//         }
-//     }
-//     neighbours
-// }
-fn traverse_tiles(start: &Coord, current:Coord, tiles: &Vec<Vec<Tile>>, memory: &mut HashSet<Coord>, depth:usize)->Option<usize>{
-    println!("Current: {current:?}, {}",memory.contains(&current));
-    if current == *start{
-        return Some(depth);
-    }
-    if memory.contains(&current){
-        return None;
-    }
-    memory.insert(current.clone());
-    let max_x = tiles.len();
-    let max_y = tiles[0].len();
-    let neighbours = tiles[current[0]][current[1]].get_neighbours(current, max_x, max_y);
-    // Note to self: To prevent memory overflow, do not let the function check the previous current node.
-    // Make a function that takes in a From coord and a To coord and returns a Dir based on what dir that went?
-    // Then exclude that dir from neighbours.
-    for neighbour in neighbours{
-        if let Some(length) = traverse_tiles(start, neighbour, tiles, memory, depth+1){
-            return Some(length);
-        }
-    }
-    return None;
-    
-
-}
-fn initialize_traverse_tiles(start_coord: &Coord, current: Coord, tiles: &Vec<Vec<Tile>>)->Option<usize>{
-    let mut memory: HashSet<[usize; 2]> = HashSet::new();
-    memory.insert(start_coord.clone());
-    traverse_tiles(start_coord, current, tiles, &mut memory, 2)
-
 }
 pub fn main_1(file_name:&str)->Option<usize>{
     /*
@@ -170,18 +218,10 @@ pub fn main_1(file_name:&str)->Option<usize>{
     Done.
      */
     let data_string = read_to_string(file_name).unwrap();
-    let (start_coord, tiles): (Coord, Vec<Vec<Tile>>) = make_tiles(data_string);
-    let max_x = tiles.len();
-    let max_y = tiles[0].len();
-    let neighbours: Vec<Coord> = tiles[start_coord[0]][start_coord[1]].get_neighbours(start_coord,max_x,max_y);
-    for neighbour in neighbours.into_iter(){
-        if let Some(length_of_path) = initialize_traverse_tiles(&start_coord, neighbour, &tiles){
-            // We've found one loop leading back to start.
-            // This should be the only loop.
-            // Now we just measure the length of this loop, and cut it in half.
-            println!(">>>>>>>>>>>>> {length_of_path} <<<<<<<<<<<<<<");
-            return Some(length_of_path/2)
-        }
+    let (start_coord, tiles): (Coord, Vec<Vec<Tile>>) = process_data_string(data_string);
+
+    #[cfg(test)]{
+        panic!("Tests all have a defined answer, so should never return None!")
     }
     None
 
@@ -192,8 +232,41 @@ pub fn main_1(file_name:&str)->Option<usize>{
     use super::*;
 
     #[test]
-    fn my_test(){
+    fn idx_tester(){
+        let nodes = vec![
+                Node{current: [0,0],dirs:vec![], neighbours:vec![]},
+                Node{current: [0,1],dirs:vec![], neighbours:vec![]},
+                Node{current: [0,2],dirs:vec![], neighbours:vec![]},
+                Node{current: [1,0],dirs:vec![], neighbours:vec![]},
+                Node{current: [1,1],dirs:vec![], neighbours:vec![]},
+                Node{current: [1,2],dirs:vec![], neighbours:vec![]}
+            ];
+        let nm = NodeMatrix{ nodes, height: 2, width: 3 };
+        assert_eq!(nm.idx_from_coord(&[0,0]),0);
+        assert_eq!(nm.idx_from_coord(&[0,1]),1);
+        assert_eq!(nm.idx_from_coord(&[0,2]),2);
+        assert_eq!(nm.idx_from_coord(&[1,0]),3);
+        assert_eq!(nm.idx_from_coord(&[1,1]),4);
+        assert_eq!(nm.idx_from_coord(&[1,2]),5);
+    }   
+    #[test]
+    fn coord_tester(){
+        let nodes = vec![
+                Node{current: [0,0],dirs:vec![], neighbours:vec![]},
+                Node{current: [0,1],dirs:vec![], neighbours:vec![]},
+                Node{current: [0,2],dirs:vec![], neighbours:vec![]},
+                Node{current: [1,0],dirs:vec![], neighbours:vec![]},
+                Node{current: [1,1],dirs:vec![], neighbours:vec![]},
+                Node{current: [1,2],dirs:vec![], neighbours:vec![]}
+            ];
+        let nm = NodeMatrix{ nodes, height: 2, width: 3 };
+        assert_eq!(nm.coord_from_idx(0),[0,0]);
+        assert_eq!(nm.coord_from_idx(1),[0,1]);
+        assert_eq!(nm.coord_from_idx(2),[0,2]);
+        assert_eq!(nm.coord_from_idx(3),[1,0]);
+        assert_eq!(nm.coord_from_idx(4),[1,1]);
+        assert_eq!(nm.coord_from_idx(5),[1,2]);
+    }  
 
-    }
 
 }
