@@ -73,8 +73,8 @@ mod tests{
 
     }
 	#[test]
-	fn part1_dummy(){
-        let file_name = r"src\dummy.txt";
+	fn part1_dummy1(){
+        let file_name = r"src\dummy1.txt";
         let start = Instant::now();
         let count = main_1(file_name);
         let end = start.elapsed();
@@ -113,14 +113,50 @@ mod tests{
     }
 
 	#[test]
-	fn part2_dummy(){
-        let file_name = r"src\dummy.txt";
+	fn part2_dummy4(){
+        let file_name = r"src\dummy4.txt";
         let start = Instant::now();
         let count = main_2(file_name);
         let end = start.elapsed();
         println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
         if let Some(actual_value) = count{
-            let expected_value = todo!();
+            let expected_value = 4;
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
+        }
+	}
+    #[test]
+	fn part2_dummy5(){
+        let file_name = r"src\dummy5.txt";
+        let start = Instant::now();
+        let count = main_2(file_name);
+        let end = start.elapsed();
+        println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            let expected_value = 4;
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
+        }
+	}
+    #[test]
+	fn part2_dummy6(){
+        let file_name = r"src\dummy6.txt";
+        let start = Instant::now();
+        let count = main_2(file_name);
+        let end = start.elapsed();
+        println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            let expected_value = 8;
+            assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
+        }
+	}
+    #[test]
+	fn part2_dummy7(){
+        let file_name = r"src\dummy7.txt";
+        let start = Instant::now();
+        let count = main_2(file_name);
+        let end = start.elapsed();
+        println!("\nPart 2 Dummy: {count:?}\nRuntime: {end:?}");
+        if let Some(actual_value) = count{
+            let expected_value = 10;
             assert_eq!(actual_value, expected_value, "Got {actual_value}, expected {expected_value}");
         }
 	}
