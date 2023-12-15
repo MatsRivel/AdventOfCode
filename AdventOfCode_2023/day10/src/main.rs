@@ -15,7 +15,6 @@ fn main() {
   assert!(count.unwrap() > lowest_known,"Answer must be > {lowest_known}!");
 
   // Part2 Puzzle:
-  let file_name= r"src\puzzle.txt";
   let start = Instant::now();
   let count = main_2(file_name);
   let end = start.elapsed();

@@ -1,6 +1,6 @@
 use std::{fs::read_to_string, collections::{HashSet, VecDeque}};
-use crate::p1::{Adjust,Pipe,Dir,process_data_string,Node, Coord};
-pub fn other_end_of_loop(nodes: &Vec<Vec<Node>>, start:Coord, prev: Coord, current:Coord, depth:usize)->Coord{
+use crate::p1::{Adjust,Pipe,Dir,process_data_string,Node, Coord, count_loop_length};
+pub fn other_end_of_loop(nodes: &Vec<Vec<Node>>, start:Coord, prev: Coord, current:Coord)->Coord{
     if current == start{
         return prev;
     }
@@ -19,7 +19,7 @@ pub fn other_end_of_loop(nodes: &Vec<Vec<Node>>, start:Coord, prev: Coord, curre
     if neighbour == [usize::MAX,usize::MAX]{
         return start;
     }
-    return other_end_of_loop(nodes, start, current, neighbour, depth+1);
+    return other_end_of_loop(nodes, start, current, neighbour);
 }
 
 pub fn build_loop(nodes: &Vec<Vec<Node>>, start:Coord, prev: Coord, current:Coord)->Option<Vec<Coord>>{
@@ -46,20 +46,34 @@ pub fn build_loop(nodes: &Vec<Vec<Node>>, start:Coord, prev: Coord, current:Coor
 
 struct PathIterator{
     nodes: Vec<Vec<Node>>,
+    start: Coord,
     current: Coord,
-    next: Coord
 }
-fn build_path(nodes: &Vec<Vec<Node>>, start:Coord, mut next: Coord)->Vec<Coord>{
+impl Iterator for PathIterator{
+    type Item=Coord;
+    fn next(&mut self) -> Option<Self::Item> {
+        let [x,y] = self.current;
+        let neighbour = (&self.nodes[x][y].neighbours).into_iter().filter(|n| **n != [x,y]).last().unwrap();
+        self.current = neighbour.clone();
+        if self.current != self.start{
+            return Some(neighbour.clone());
+        }
+        None
+    }
+}
+fn build_path(nodes: &Vec<Node>, start:usize, mut next: usize,ymax:usize)->VecDeque<usize>{
+    println!("Build start:");
     let mut current = start.clone();
-    let mut output = vec![current];
+    let mut output = VecDeque::with_capacity(nodes.len());
+    output.push_back(current);
     while next != start{
-        output.push(next);
-        let [x,y] = next;
-        let neighbour = (&nodes[x][y].neighbours).into_iter().filter(|n| **n != current).last().unwrap();
+        output.push_back(next);
+        let neighbour = (&nodes[next].neighbours).into_iter().map(|n| n[0]*ymax+n[1]).filter(|n| *n != current).last().unwrap();
         current = next;
         next = neighbour.clone();
     }
-    output.into_iter().rev().collect::<Vec<Coord>>()
+    println!("Build end.");
+    output
 }
 impl Dir{
     fn turn_left(&self)->Self{
@@ -121,38 +135,55 @@ pub fn width_first_covering(type_matrix:&mut Vec<Vec<Option<u32>>>, start:Coord)
         }
     }
 }
+
+
+pub fn loop_tail(nodes: &Vec<Node>, start:usize, prev: usize, current:usize, ymax:usize)->usize{
+    if current == start{
+        return prev;
+    }
+    // Only one neighbour is valid.
+    // By avoiding loop and options we can bait the compiler into tail-recursion.
+    // This lets us recurse near indefinetly.
+    
+    let neighbour = nodes[current].neighbours
+        .iter()
+        .map(|[x,y]| x*ymax + y)
+        .filter(|neigh| *neigh != prev)
+        .last()
+        .or(Some(usize::MAX))
+        .unwrap();
+    if neighbour == usize::MAX{
+        return neighbour;
+    }
+    return loop_tail(nodes, start, current, neighbour,ymax);
+}
 pub fn main_2(file_name:&str)->Option<usize>{
     let data_string = read_to_string(file_name).unwrap();
-    let (start_coord, mut nodes): (Coord, Vec<Vec<Node>>) = process_data_string(data_string);
-    let xmax = nodes.len();
-    let ymax = nodes[0].len();
-    let start_node = &nodes[start_coord[0]][start_coord[1]];
-    // Find each end of the pipe hidden below the start, and reassign it.
-    // We still store "start_coord" so we can keep track of where the loop starts/ends.
+    let (start_coord, nodes): (Coord, Vec<Vec<Node>>) = process_data_string(data_string);
+    let [xmax,ymax] = [nodes.len(),nodes[0].len()]; 
+    let flat_nodes = nodes.into_iter().flatten().collect::<Vec<Node>>();
+    let start_idx = start_coord[0] * ymax + start_coord[1];
+    let start_node = &flat_nodes[start_idx];
+    let mut tail_list = vec![];
     for neighbour in start_node.neighbours.iter(){
-        let neighbour_node = &nodes[neighbour[0]][neighbour[1]];
+        let neighbour_idx = neighbour[0]*ymax + neighbour[1];
+        let neighbour_node = &flat_nodes[neighbour_idx];
         if start_node.are_connected(neighbour_node){
-            let other_neighbour_coord = other_end_of_loop(&nodes, start_coord.clone(), start_coord, *neighbour, 1);
-            if other_neighbour_coord != start_coord{
-                let a = Dir::from([start_coord,*neighbour]);
-                let b = Dir::from([other_neighbour_coord,start_coord]);
-                let hidden_pipe = Pipe::from([a,b]);
-                let hidden_node = Node::new(hidden_pipe, start_coord, nodes.len(), nodes[0].len());
-                nodes[start_coord[0]][start_coord[1]] = hidden_node;
-                break;
+            let tail = loop_tail(&flat_nodes, start_idx, start_idx, neighbour_idx,ymax);
+            if tail != usize::MAX{
+                tail_list.push((neighbour_idx,tail));
             }
         }
     }
-    
-    
-
+    println!("{tail_list:?}");
     // Now we KNOW there is a finite loop, and it starts at 'start_coord'.
     // We can now make a vec containing all elements in the loop.
-    let start_node = &nodes[start_coord[0]][start_coord[1]];
+    let start_node = &flat_nodes[start_idx];
     let randon_valid_neighbour = start_node.neighbours.iter().last().unwrap(); // We know either neighbour is valid.
     // let path2 = build_loop(&nodes, start_coord, start_coord.clone(), randon_valid_neighbour.clone()).unwrap();
     // println!("{path2:?}");
-    let path = build_path(&nodes, start_coord.clone(),randon_valid_neighbour.clone());
+    let rvn_idx = randon_valid_neighbour[0]*ymax + randon_valid_neighbour[1];
+    let path = build_path(&flat_nodes, start_idx,rvn_idx,ymax);
     println!("\n{path:?}");
     // println!("Size of path: {}", path.len());
     // println!("{path:?}");
@@ -218,32 +249,32 @@ pub fn main_2(file_name:&str)->Option<usize>{
             println!();
         }
         }
-    let mut is_left = nodes
-    .iter()
-    .map(|inner_nodes| {
-        inner_nodes.into_iter()
-            .map(|node| {
-                if node.pipe == Pipe::Missing{
-                    None
-                }else{
-                    Some(HandSide::Occupied)
-                }
-            }).collect::<Vec<Option<HandSide>>>()
-    }).collect::<Vec<Vec<Option<HandSide>>>>();
+    let mut is_left = flat_nodes
+        .iter()
+        .map(|node| {
+            if node.pipe == Pipe::Missing{
+                None
+            }else{
+                Some(HandSide::Occupied)
+            }
+        }).collect::<Vec<Option<HandSide>>>();
     
     for (current, next) in path.clone().into_iter().zip(path.into_iter().skip(1)){
-        let dir = Dir::from([current,next]);
+        let current_coord =[ (current / ymax), (current % ymax)];
+        let next_coord = [(next / ymax), (next % ymax)];
+        let dir = Dir::from([current_coord,next_coord]);
         let left_of_dir = dir.turn_left();
         let pos_left_of_current = match left_of_dir{
-            Dir::N => current.north(),
-            Dir::S => current.south(),
-            Dir::E => current.east(),
-            Dir::W => current.west(),
+            Dir::N => current_coord.north(),
+            Dir::S => current_coord.south(),
+            Dir::E => current_coord.east(),
+            Dir::W => current_coord.west(),
         };
         if let Some([x,y]) = pos_left_of_current{
             if x < xmax && y < ymax{
-                if is_left[x][y].is_none(){
-                    is_left[x][y] = Some(HandSide::Left);
+                let idx = x*ymax + y;
+                if is_left[idx].is_none(){
+                    is_left[idx] = Some(HandSide::Left);
                 }
             }
         }
@@ -263,8 +294,9 @@ pub fn main_2(file_name:&str)->Option<usize>{
         // }
     }
     #[cfg(test)]{
-        for row in is_left.iter(){
-            for point in row.iter(){
+        for x in 0..xmax{
+            for y in 0..ymax{
+                let point = is_left[x*ymax + y ];
                 if let Some(p) = point{
                     if *p == HandSide::Occupied{
                         print!("X");
@@ -282,7 +314,7 @@ pub fn main_2(file_name:&str)->Option<usize>{
         }
         println!();
     }
-    let total_count = is_left.len() * is_left[0].len();
+    let total_count = is_left.len();
     let left_count = is_left
         .iter()
         .flat_map(|row| row)
