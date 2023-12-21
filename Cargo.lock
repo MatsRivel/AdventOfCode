@@ -30,6 +30,17 @@ name = "day13"
 version = "0.1.0"
 
 [[package]]
+name = "day14"
+version = "0.1.0"
+
+[[package]]
+name = "day15"
+version = "0.1.0"
+dependencies = [
+ "index-map",
+]
+
+[[package]]
 name = "day2"
 version = "0.1.0"
 
@@ -60,6 +71,12 @@ version = "0.1.0"
 [[package]]
 name = "day9"
 version = "0.1.0"
+
+[[package]]
+name = "index-map"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ea06ad425513b4cac7d2a1b3fc36b518281e74a96b9739d9a34e7a4151dbb48"
 
 [[package]]
 name = "tools"

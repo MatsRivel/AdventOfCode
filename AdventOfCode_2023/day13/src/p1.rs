@@ -133,7 +133,7 @@ fn find_mirror(pattern:&Pattern<bool>)->Option<(usize,bool)>{ // -> ( idx, is_ve
             #[cfg(test)]
             println!("Extensive vertical mirror check failed")
         }
-    }
+    }day14
     'x_loop: for x in 0..pattern.xmax-1{
         #[cfg(test)]
         println!("x: {x}");
