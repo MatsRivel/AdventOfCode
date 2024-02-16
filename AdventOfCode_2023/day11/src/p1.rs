@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, arch::x86_64};
+use std::{fs::read_to_string};
 
 struct Matrix{
     mat: Vec<[usize;2]>,
