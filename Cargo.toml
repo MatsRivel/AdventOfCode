@@ -84,7 +84,7 @@ members = [
 # "./AdventOfCode_2022/day23",
 # "./AdventOfCode_2022/day24",
 # "./AdventOfCode_2022/day25",
-"./tools",
+"./tools", "AdventOfCode_2023/day21",
 ]
 [[bin]]
 name = "AdventOfCode"
